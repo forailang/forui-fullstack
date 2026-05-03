@@ -1,0 +1,35 @@
+use std.math
+
+use { query_params } from Forsqlite
+
+use { getDb } from data
+
+# Find a user by email, or null when no row matches.
+def findUserByEmail
+    @param email String
+    @return User?
+do
+  let rows = query_params(getDb(), 'SELECT id, name, email, password FROM users WHERE email = ?', [email])
+  if length(rows) == 0
+    null
+  else
+    let r = rows[0]
+    User(id: getInt(r, 'id')!, name: getString(r, 'name')!, email: getString(r, 'email')!, password: getString(r, 'password')!)
+  end
+end
+
+test findUserByEmail
+it 'returns null for an email that has not been registered'
+  let n Int = math.floor(math.random() * 1000000.0)
+  assert.isNull(findUserByEmail('missing-' + toString(n) + '@example.com'))
+end
+it 'returns the user record for an existing email'
+  let n Int = math.floor(math.random() * 1000000.0)
+  let email = 'find-' + toString(n) + '@example.com'
+  createUser('Find User', email, 'pw')
+  let u = findUserByEmail(email)
+  assert.isNotNull(u)
+  assert.equals(u!.email, email)
+  assert.equals(u!.name, 'Find User')
+end
+end

@@ -1,0 +1,37 @@
+use std.array
+
+use std.convert
+
+use std.math
+
+use { exec_params, last_insert_rowid } from Forsqlite
+
+use { requireSession, signup } from auth
+
+use { getDb } from data
+
+# AddTask.
+remote def addTask
+    @param text String
+    @return Task
+do
+  let uid = requireSession().userId
+  let db = getDb()
+  var params Unknown[] = []
+  params = array.append(params, uid)
+  params = array.append(params, text)
+  params = array.append(params, false)
+  exec_params(db, 'INSERT INTO tasks (user_id, text, done) VALUES (?, ?, ?)', params)
+  let id = last_insert_rowid(db)
+  Task(id: id, text: text, done: false)
+end
+
+test addTask
+it 'creates a task for the current session'
+  let n Int = math.floor(math.random() * 1000000.0)
+  signup('Task Add User', 'tasks-add-' + toString(n) + '@example.com', 'pw')
+  let task = addTask('write tests')
+  assert.equals(task.text, 'write tests')
+  assert.equals(task.done, false)
+end
+end

@@ -1,0 +1,30 @@
+use std.string
+
+# Strip a `sqlite:` or `sqlite://` scheme from a URL so the
+# remainder is a plain path or `:memory:` for forsqlite.open.
+def stripSqliteScheme
+    @param url String
+    @return String
+do
+  if string.startsWith(url, 'sqlite://')
+    string.substring(url, 9, string.length(url))
+  else
+    if string.startsWith(url, 'sqlite:')
+      string.substring(url, 7, string.length(url))
+    else
+      url
+    end
+  end
+end
+
+test stripSqliteScheme
+it 'strips the sqlite:// prefix from a file path'
+  assert.equals(stripSqliteScheme('sqlite://db/dev.sqlite'), 'db/dev.sqlite')
+end
+it 'strips the sqlite: prefix from :memory:'
+  assert.equals(stripSqliteScheme('sqlite::memory:'), ':memory:')
+end
+it 'returns a non-sqlite url unchanged'
+  assert.equals(stripSqliteScheme(':memory:'), ':memory:')
+end
+end

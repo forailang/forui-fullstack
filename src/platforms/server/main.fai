@@ -1,0 +1,66 @@
+use std.convert
+
+use std.env
+
+use std.events
+
+use std.file
+
+use std.http.server
+
+use { renderToString } from HtmlForui
+
+use { App, makeHtmlShell } from platforms.web
+
+use { getDb } from data
+
+use { findSession, setCurrentSession } from auth
+
+use { getCookie } from Forui.cookie
+
+# Resolve the server port from SERVER_PORT, falling back to 3040.
+def serverPort
+    @return Int
+do
+  if env.get('SERVER_PORT')?
+    convert.parseInt(env.get('SERVER_PORT')!)
+  else
+    3040
+  end
+end
+
+test serverPort
+it 'parses SERVER_PORT from a loaded env file'
+  file.write('/tmp/fai_myapp_server_port_test.env', 'SERVER_PORT=4242\n')
+  env.load('/tmp/fai_myapp_server_port_test.env')
+  assert.equals(serverPort(), 4242)
+end
+end
+
+def main
+    @return Void
+do
+  env.load('.env.dev')
+  let port = serverPort()
+  getDb()
+  let _populate = events.on('http:beforeRequest') do with e Event
+      let req HttpRequest = from_dict(e.data)
+      let token = getCookie(req, 'fai_session')
+      if token?
+        setCurrentSession(findSession(token!))
+      else
+        setCurrentSession(null)
+      end
+  end
+  let _clear = events.on('http:afterResponse') do with e Event
+      setCurrentSession(null)
+  end
+  print('Server listening on :' + toString(port))
+  var r = server.router()
+  addRpcRoutes(r)
+  server.serveFiles(r, 'build/web')
+  server.get(r, '*') do with req HttpRequest
+      server.html(200, makeHtmlShell(renderToString(App, req.path)))
+  end
+  server.listen(r, port)
+end

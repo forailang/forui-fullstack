@@ -1,0 +1,27 @@
+use { ViewNode, VStack, Label, fontSize, fontWeight, foreground, padding } from Forui.view
+
+use { TopBar } from components
+
+# About page.
+def AboutPage
+    @return ViewNode
+do
+  VStack do
+      TopBar()
+      let body = VStack do
+          Label('About').fontSize(24).fontWeight('700')
+          Label('A fullstack app built with forai and forui.').fontSize(16)
+          Label('Uses same-module RPC calls.').foreground('#8e8e93').fontSize(13)
+      end
+      body.padding(20)
+  end
+end
+
+test AboutPage
+it 'renders the about page shell'
+  let node = AboutPage()
+  assert.equals(node.kind, 'VStack')
+  assert.equals(node.children[0].kind, 'HStack')
+  assert.equals(node.children[1].kind, 'VStack')
+end
+end

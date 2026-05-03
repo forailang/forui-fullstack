@@ -1,0 +1,35 @@
+use std.array
+
+use std.convert
+
+use std.math
+
+use { query_params } from Forsqlite
+
+use { requireSession, signup } from auth
+
+use { getDb } from data
+
+# GetTasks.
+remote def getTasks
+    @return Task[]
+do
+  let uid = requireSession().userId
+  let rows = query_params(getDb(), 'SELECT id, text, done FROM tasks WHERE user_id = ? ORDER BY id', [uid])
+  var result Task[] = []
+  for row in rows
+    result = array.append(result, Task(id: getInt(row, 'id')!, text: getString(row, 'text')!, done: getInt(row, 'done')! != 0))
+  end
+  result
+end
+
+test getTasks
+it 'returns tasks for the current session'
+  let n Int = math.floor(math.random() * 1000000.0)
+  signup('Tasks List User', 'tasks-list-' + toString(n) + '@example.com', 'pw')
+  addTask('first task')
+  let tasks = getTasks()
+  assert.equals(length(tasks), 1)
+  assert.equals(tasks[0].text, 'first task')
+end
+end

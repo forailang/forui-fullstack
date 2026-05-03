@@ -1,0 +1,40 @@
+use { ViewNode, VStack, Label, Button, fontSize, fontWeight, foreground, padding } from Forui.view
+
+use { navigate } from Forui.router
+
+use { clearSession, isLoggedIn } from auth
+
+use { TopBar } from components
+
+# Marketing home page — hero section with CTA.
+def HomePage
+    @return ViewNode
+do
+  VStack do
+      TopBar()
+      let hero = VStack do
+          Label('Welcome to MyApp.').fontSize(40).fontWeight('700').foreground('#1c1c1e')
+          Label('A fullstack starter built with forai and forui.').fontSize(16).foreground('#6d6d72')
+          if isLoggedIn()
+            Button('Go to my tasks', onClick: do
+                navigate('/tasks')
+            end)
+          else
+            Button('Get started', onClick: do
+                navigate('/session/signup')
+            end)
+          end
+      end
+      hero.padding(48)
+  end
+end
+
+test HomePage
+it 'renders the signed-out home page'
+  clearSession()
+  let node = HomePage()
+  assert.equals(node.kind, 'VStack')
+  assert.equals(node.children[0].kind, 'HStack')
+  assert.equals(node.children[1].kind, 'VStack')
+end
+end

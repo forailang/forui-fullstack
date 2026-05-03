@@ -1,0 +1,25 @@
+use { ViewNode, Children, VStack, Label, fontSize, foreground, fontWeight, padding, background, cornerRadius } from Forui.view
+
+# Reusable card container with a section title.
+def Section
+    @param title String
+    @param builder Children
+    @return ViewNode
+do
+  let card = VStack do
+      Label(title).fontSize(13).foreground('#6d6d72').fontWeight('600')
+      builder()
+  end
+  card.padding(16).background('#ffffff').cornerRadius(12)
+end
+
+test Section
+it 'wraps a title and body content'
+  let node = Section('TITLE') do
+      Label('Body')
+  end
+  assert.equals(node.kind, 'VStack')
+  assert.equals(node.children[0].kind, 'Label')
+  assert.equals(node.children[1].kind, 'Label')
+end
+end

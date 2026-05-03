@@ -1,0 +1,56 @@
+use { ViewNode, VStack, Label, padding, fontSize } from Forui.view
+
+use { Router, Route, setPathFromPlatform } from Forui.router
+
+use { TopBar } from components
+
+use { clearSession } from auth
+
+use { HomePage, TaskDetailPage, AboutPage, TasksPage } from pages
+
+use { LoginPage, SignupPage, LogoutPage } from pages.auth
+
+# Main app — routing shell. Each page renders its own TopBar.
+def App
+    @return ViewNode
+do
+  Router do
+      Route('/') do
+          HomePage()
+      end
+      Route('/tasks') do
+          TasksPage()
+      end
+      Route('/task/:id') do
+          TaskDetailPage()
+      end
+      Route('/session/login') do
+          LoginPage()
+      end
+      Route('/session/signup') do
+          SignupPage()
+      end
+      Route('/session/logout') do
+          LogoutPage()
+      end
+      Route('/about') do
+          AboutPage()
+      end
+      Route('*') do
+          VStack do
+              TopBar()
+              Label('Page not found').fontSize(18).padding(32)
+          end
+      end
+  end
+end
+
+test App
+it 'renders the router shell'
+  clearSession()
+  setPathFromPlatform('/')
+  let node = App()
+  assert.equals(node.kind, 'Router')
+  assert.equals(getString(node.props, 'matchedPattern')!, '/')
+end
+end

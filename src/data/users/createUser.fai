@@ -1,0 +1,26 @@
+use std.math
+
+use { exec_params, last_insert_rowid } from Forsqlite
+
+use { getDb } from data
+
+# Insert a new user and return the assigned id. Throws if the email
+# already exists (UNIQUE constraint on `users.email`).
+def createUser
+    @param name String
+    @param email String
+    @param password String
+    @return Int
+do
+  let db = getDb()
+  exec_params(db, 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)', [name email password])
+  last_insert_rowid(db)
+end
+
+test createUser
+it 'returns the assigned id for the new user'
+  let n Int = math.floor(math.random() * 1000000.0)
+  let id = createUser('Create User', 'create-' + toString(n) + '@example.com', 'pw')
+  assert.isTrue(id > 0)
+end
+end

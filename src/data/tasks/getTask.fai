@@ -1,0 +1,33 @@
+use std.convert
+
+use std.math
+
+use { query_params } from Forsqlite
+
+use { requireSession, signup } from auth
+
+use { getDb } from data
+
+# GetTask.
+remote def getTask
+    @param id Int
+    @return Task
+do
+  let uid = requireSession().userId
+  let rows = query_params(getDb(), 'SELECT id, text, done FROM tasks WHERE id = ? AND user_id = ?', [id uid])
+  if length(rows) == 0
+    throw Error('task not found')
+  end
+  let r = rows[0]
+  Task(id: getInt(r, 'id')!, text: getString(r, 'text')!, done: getInt(r, 'done')! != 0)
+end
+
+test getTask
+it 'returns one task by id'
+  let n Int = math.floor(math.random() * 1000000.0)
+  signup('Task Detail User', 'tasks-detail-' + toString(n) + '@example.com', 'pw')
+  let task = addTask('find me')
+  let found = getTask(task.id)
+  assert.equals(found.text, 'find me')
+end
+end

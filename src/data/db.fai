@@ -1,0 +1,39 @@
+use std.env
+
+use { Connection, open, migrate } from Forsqlite
+
+use { stripSqliteScheme } from util
+
+var connection Connection? = null
+
+# Cached database connection. The first `getDb` call opens the
+# configured database, applies pending migrations, and stashes the
+# handle here. Subsequent calls return the cached value so every
+# remote def + test path shares one connection.
+# Return the shared database connection, opening it on first call.
+# Reads `DATABASE_URL` from the process environment (set by env.load
+# in main); falls back to an in-memory database when no URL is
+# configured, which is the path tests take.
+def getDb
+    @return Connection
+do
+  if connection?
+    connection!
+  else
+    let url = unwrap(env.get('DATABASE_URL'), 'sqlite::memory:')
+    let path = stripSqliteScheme(url)
+    let db = open(path)
+    migrate(db, 'db/migrations')
+    connection = db
+    db
+  end
+end
+
+test getDb
+it 'opens a database and is idempotent across calls'
+  let db1 = getDb()
+  let db2 = getDb()
+  assert.isNotNull(db1.handle)
+  assert.equals(db1.handle, db2.handle)
+end
+end

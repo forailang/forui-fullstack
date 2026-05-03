@@ -1,0 +1,22 @@
+use { mount } from Forui
+
+use { htmlRender, initWebRouter } from HtmlForui
+
+use { App } from platforms.web
+
+use { restoreSession, setSession } from auth
+
+def main
+    @return Void
+do
+  initWebRouter()
+  try
+    let s = restoreSession()
+    if s?
+      setSession(s!)
+    end
+  catch e
+
+  end
+  mount(App, htmlRender)
+end

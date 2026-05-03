@@ -1,0 +1,92 @@
+remote type Session
+  token String
+  userId Int
+  userName String
+end
+
+var currentSession Session? = null
+
+# Global client-side auth state. Module-level var persists within the WASM session.
+# Navigating triggers a rerender which reads the latest value.
+# Returns true when a valid session is stored.
+def isLoggedIn
+    @return Bool
+do
+  currentSession != null
+end
+
+# Returns the current session token, or empty string if not logged in.
+def sessionToken
+    @return String
+do
+  if currentSession?
+    currentSession!.token
+  else
+    ''
+  end
+end
+
+# Returns the logged-in user's display name, or empty string.
+def sessionUserName
+    @return String
+do
+  if currentSession?
+    currentSession!.userName
+  else
+    ''
+  end
+end
+
+# Store a session after successful login or signup.
+def setSession
+    @param s Session
+    @return Void
+do
+  currentSession = s
+end
+
+# Clear the session on logout.
+def clearSession
+    @return Void
+do
+  currentSession = null
+end
+
+test isLoggedIn
+it 'returns false with no current session'
+  clearSession()
+  assert.equals(isLoggedIn(), false)
+end
+end
+
+test sessionToken
+it 'returns the active session token'
+  setSession(Session(token: 'state-token', userId: 7, userName: 'Pat'))
+  assert.equals(sessionToken(), 'state-token')
+  clearSession()
+end
+end
+
+test sessionUserName
+it 'returns the active session user name'
+  setSession(Session(token: 'state-name-token', userId: 8, userName: 'Lee'))
+  assert.equals(sessionUserName(), 'Lee')
+  clearSession()
+end
+end
+
+test setSession
+it 'stores the current session'
+  setSession(Session(token: 'state-set-token', userId: 9, userName: 'Sam'))
+  assert.equals(isLoggedIn(), true)
+  clearSession()
+end
+end
+
+test clearSession
+it 'removes the current session'
+  setSession(Session(token: 'state-clear-token', userId: 10, userName: 'Jo'))
+  clearSession()
+  assert.equals(isLoggedIn(), false)
+end
+end

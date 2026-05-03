@@ -1,0 +1,25 @@
+[project]
+name = "MyApp"
+version = "0.1.0"
+source_root = "src"
+
+[project.web]
+target = "wasm-html"
+source = "src"
+main = "src/platforms/web/main.fai"
+build_dir = "build/web"
+
+[project.server]
+target = "native"
+source = "src"
+main = "src/platforms/server/main.fai"
+build_dir = "build/server"
+rpc_server = true
+
+[dependencies]
+"file://../forui" = "0.1.0"
+"file://../html-forui" = "0.1.0"
+"file://../forsqlite" = "0.1.0"
+
+[project.web.dependencies.server.remote.dev]
+url = "http://localhost:3040"

@@ -1,0 +1,25 @@
+use { ViewNode, Label } from Forui.view
+
+use { navigate } from Forui.router
+
+use { logout, isLoggedIn, clearSession } from auth
+
+# Logout page — clears session and redirects to home immediately.
+def LogoutPage
+    @return ViewNode
+do
+  if isLoggedIn()
+    logout()
+    clearSession()
+  end
+  navigate('/')
+  Label('Logging out…')
+end
+
+test LogoutPage
+it 'renders a logout message'
+  clearSession()
+  let node = LogoutPage()
+  assert.equals(node.kind, 'Label')
+end
+end

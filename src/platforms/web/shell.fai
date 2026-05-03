@@ -1,0 +1,28 @@
+use std.file
+
+use std.string
+
+var cachedShellTemplate String? = null
+
+# Render the deliverable HTML page around server-rendered app markup.
+# Reads `src/platforms/web/index.html` once and replaces the
+# `{{APP_HTML}}` placeholder with the supplied app markup. The
+# template is the user-authored web shell — favicons, meta tags,
+# stylesheet links, runtime script tag.
+def makeHtmlShell
+    @param appHtml String
+    @return String
+do
+  if !cachedShellTemplate?
+    cachedShellTemplate = file.read('src/platforms/web/index.html')
+  end
+  string.replace(cachedShellTemplate!, '{{APP_HTML}}', appHtml)
+end
+
+test makeHtmlShell
+it 'splices app markup into the shell template'
+  let html = makeHtmlShell('<main>hello</main>')
+  assert.isTrue(string.contains(html, '<div id="app"><main>hello</main></div>'))
+  assert.isTrue(string.contains(html, '<script src="/fai-runtime.js"></script>'))
+end
+end

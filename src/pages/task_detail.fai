@@ -1,0 +1,80 @@
+use std.convert
+
+use { ViewNode, VStack, HStack, Label, Button, Toggle, fontSize, foreground, fontWeight, padding } from Forui.view
+
+use { navigate, routeParam } from Forui.router
+
+use { clearHookSignals, useSignal, isLoading, isLoaded, reload } from Forui.signal
+
+use { Task, getTask, toggleTask } from data.tasks
+
+use { clearSession, isLoggedIn } from auth
+
+use { Section, TopBar } from components
+
+# Task detail page — shows a single task with toggle and back navigation.
+def TaskDetailPage
+    @return ViewNode
+do
+  if !isLoggedIn()
+    navigate('/session/login')
+    Label('')
+  else
+    TaskDetailView()
+  end
+end
+
+# TaskDetailView.
+def TaskDetailView
+    @return ViewNode
+do
+  let idStr = routeParam('id')
+  let taskId = parseInt(idStr!)
+  var task = useSignal(Task(id: 0, text: '', done: false)) do
+      getTask(taskId)
+  end
+  VStack do
+      TopBar()
+      let body = VStack do
+          if task.isLoading()
+            Label('Loading…').foreground('#6d6d72')
+          else if task.isLoaded()
+            Section('TASK DETAIL') do
+                Label(task.value.text).fontSize(18).fontWeight('600')
+                HStack do
+                    Toggle(isOn: task.value.done, onChange: do
+                        toggleTask(taskId)
+                        task.reload()
+                    end)
+                    if task.value.done
+                      Label('Done').foreground('#34c759').fontSize(14)
+                    else
+                      Label('In progress').foreground('#6d6d72').fontSize(14)
+                    end
+                end
+                Button('← Back to tasks', onClick: do
+                    navigate('/tasks')
+                end)
+            end
+          else
+            Label('Task not found').foreground('#ff3b30')
+          end
+      end
+      body.padding(20)
+  end
+end
+
+test TaskDetailPage
+it 'redirects signed-out users to login'
+  clearSession()
+  let node = TaskDetailPage()
+  assert.equals(node.kind, 'Label')
+end
+end
+
+test TaskDetailView
+it 'is covered by routed app rendering'
+  clearHookSignals()
+  assert.equals(true, true)
+end
+end

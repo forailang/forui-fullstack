@@ -1,0 +1,321 @@
+use std.array
+
+use std.convert
+
+use std.math
+
+use std.time
+
+use { exec_params, query_params } from Forsqlite
+
+use { User, findUserByEmail, createUser } from data.users
+
+use { getDb } from data
+
+use { queueCookie } from Forui.rpc
+
+var serverCurrentSession Session? = null
+
+# ── Server-side per-request session context ──────────────────────────
+# 
+# `serverCurrentSession` is populated by the http:beforeRequest
+# subscriber wired up in src/platforms/server/main.fai before each
+# RPC dispatch, and cleared by the http:afterResponse subscriber
+# afterwards. Module-global today; safe under the single-threaded
+# server loop. Move into per-request storage once cooperative-yield
+# lands.
+# Returns the session resolved from the current request's cookie, or
+# null when the request had no session cookie or it referenced a row
+# that's no longer in the sessions table.
+def currentRequestSession
+    @return Session?
+do
+  serverCurrentSession
+end
+
+# Stash a session into the per-request context. Called from the
+# http:beforeRequest subscriber once per incoming request.
+def setCurrentSession
+    @param s Session?
+    @return Void
+do
+  serverCurrentSession = s
+end
+
+# Look up a session row by token and return the wire Session shape.
+# Returns null when the token is unknown — used by the
+# http:beforeRequest subscriber to populate the per-request context
+# without throwing on missing/invalid cookies.
+def findSession
+    @param token String
+    @return Session?
+do
+  let rows = query_params(getDb(), 'SELECT token, user_id, user_name FROM sessions WHERE token = ?', [token])
+  if length(rows) == 0
+    null
+  else
+    let r = rows[0]
+    Session(token: getString(r, 'token')!, userId: getInt(r, 'user_id')!, userName: getString(r, 'user_name')!)
+  end
+end
+
+test findSession
+it 'returns null for an unknown token'
+  assert.isNull(findSession('not-a-real-token-' + toString(time.unix())))
+end
+end
+
+# Require an authenticated session. RPC handlers call this at the
+# top of their bodies; throws when no cookie was presented or the
+# cookie referenced a stale session.
+def requireSession
+    @return Session
+do
+  if serverCurrentSession?
+    serverCurrentSession!
+  else
+    throw Error('not authenticated')
+  end
+end
+
+# ── Auth RPC surface ─────────────────────────────────────────────────
+# 
+# signup/login both queue a session cookie via Forui.rpc.queueCookie
+# so that subsequent requests carry it automatically. They still
+# return the Session record for client-side display.
+# Restore the client-side session from the request cookie. Called by
+# the client on boot so a page refresh keeps users logged in. Returns
+# the active Session when the cookie matches a row in the sessions
+# table; returns null when there's no cookie or it's stale.
+remote def restoreSession
+    @return Session?
+do
+  serverCurrentSession
+end
+
+# Sign up and start a session.
+remote def signup
+    @param name String
+    @param email String
+    @param password String
+    @return Session
+do
+  if findUserByEmail(email)?
+    throw Error('email already registered')
+  end
+  let uid = createUser(name, email, password)
+  startSessionFor(uid, name)
+end
+
+# Login.
+remote def login
+    @param email String
+    @param password String
+    @return Session
+do
+  let user = findUserByEmail(email)
+  if !user?
+    throw Error('invalid email or password')
+  end
+  let u = user!
+  if u.password != password
+    throw Error('invalid email or password')
+  end
+  startSessionFor(u.id, u.name)
+end
+
+# Logout — uses the session resolved from the request cookie. Also
+# queues an expiring Set-Cookie so the browser drops the cookie.
+remote def logout
+    @return Bool
+do
+  if serverCurrentSession?
+    let s = serverCurrentSession!
+    exec_params(getDb(), 'DELETE FROM sessions WHERE token = ?', [s.token])
+    serverCurrentSession = null
+    queueCookie(expireSessionCookie())
+    true
+  else
+    false
+  end
+end
+
+private:
+
+# Insert a new sessions row for a freshly-authenticated user, queue a
+# Set-Cookie carrying the new token, and return the wire Session
+# shape so client UI can pick up the userName for display.
+def startSessionFor
+    @param userId Int
+    @param userName String
+    @return Session
+do
+  let token = makeToken(userId)
+  var params Unknown[] = []
+  params = array.append(params, token)
+  params = array.append(params, userId)
+  params = array.append(params, userName)
+  exec_params(getDb(), 'INSERT INTO sessions (token, user_id, user_name) VALUES (?, ?, ?)', params)
+  let session = Session(token: token, userId: userId, userName: userName)
+  serverCurrentSession = session
+  queueCookie(sessionCookie(token))
+  session
+end
+
+# Build the persistent fai_session cookie carrying a session token.
+def sessionCookie
+    @param token String
+    @return Cookie
+do
+  let c Cookie = from_dict({
+    name: 'fai_session'
+    value: token
+    path: '/'
+    httpOnly: true
+    sameSite: 'Lax'
+  })
+  c
+end
+
+# Build an immediately-expired fai_session cookie so logout drops the
+# value on the client.
+def expireSessionCookie
+    @return Cookie
+do
+  let c Cookie = from_dict({
+    name: 'fai_session'
+    value: ''
+    path: '/'
+    maxAge: 0
+    httpOnly: true
+    sameSite: 'Lax'
+  })
+  c
+end
+
+# Build a session token combining the user id, the current unix
+# timestamp, and a random suffix. Collisions are vanishingly unlikely
+# on the single-process server.
+def makeToken
+    @param userId Int
+    @return String
+do
+  let stamp = time.unix()
+  let r Int = math.floor(math.random() * 1000000.0)
+  toString(userId) + '-' + toString(stamp) + '-' + toString(r)
+end
+
+test restoreSession
+it 'returns null when no per-request session is set'
+  setCurrentSession(null)
+  assert.isNull(restoreSession())
+end
+it 'returns the per-request session installed by http:beforeRequest'
+  let s = Session(token: 'restore-tok', userId: 99, userName: 'Sam')
+  setCurrentSession(s)
+  let got = restoreSession()
+  assert.isTrue(got?)
+  assert.equals(got!.token, 'restore-tok')
+  assert.equals(got!.userName, 'Sam')
+  setCurrentSession(null)
+end
+end
+
+test signup
+it 'creates a user session and populates the per-request context'
+  setCurrentSession(null)
+  let n Int = math.floor(math.random() * 1000000.0)
+  let email = 'signup-' + toString(n) + '@example.com'
+  let s = signup('Signup User', email, 'pw')
+  assert.equals(s.userName, 'Signup User')
+  assert.equals(requireSession().userId, s.userId)
+end
+it 'rejects a duplicate email'
+  setCurrentSession(null)
+  let n Int = math.floor(math.random() * 1000000.0)
+  let email = 'dup-' + toString(n) + '@example.com'
+  signup('Dup User', email, 'pw')
+  var threw = false
+  try
+    signup('Dup User Again', email, 'pw')
+  catch e
+    threw = true
+  end
+  assert.isTrue(threw)
+end
+end
+
+test login
+it 'creates a new session for valid credentials'
+  setCurrentSession(null)
+  let n Int = math.floor(math.random() * 1000000.0)
+  let email = 'login-' + toString(n) + '@example.com'
+  signup('Login User', email, 'pw')
+  let s = login(email, 'pw')
+  assert.equals(s.userName, 'Login User')
+end
+it 'rejects an unknown email'
+  setCurrentSession(null)
+  let n Int = math.floor(math.random() * 1000000.0)
+  var threw = false
+  try
+    login('missing-' + toString(n) + '@example.com', 'pw')
+  catch e
+    threw = true
+  end
+  assert.isTrue(threw)
+end
+end
+
+test logout
+it 'invalidates the active session and clears the per-request context'
+  setCurrentSession(null)
+  let n Int = math.floor(math.random() * 1000000.0)
+  let s = signup('Logout User', 'logout-' + toString(n) + '@example.com', 'pw')
+  assert.equals(logout(), true)
+  assert.isNull(currentRequestSession())
+  var threw = false
+  try
+    requireSession()
+  catch e
+    threw = true
+  end
+  assert.isTrue(threw)
+end
+it 'returns false when no session is active'
+  setCurrentSession(null)
+  assert.equals(logout(), false)
+end
+end
+
+test requireSession
+it 'returns the active session'
+  setCurrentSession(null)
+  let n Int = math.floor(math.random() * 1000000.0)
+  let s = signup('Require User', 'require-' + toString(n) + '@example.com', 'pw')
+  assert.equals(requireSession().token, s.token)
+end
+end
+
+test currentRequestSession
+it 'returns null when no session has been set'
+  setCurrentSession(null)
+  assert.isNull(currentRequestSession())
+end
+it 'returns the session that setCurrentSession installed'
+  let s = Session(token: 'tok-x', userId: 9, userName: 'Pat')
+  setCurrentSession(s)
+  assert.equals(currentRequestSession()!.token, 'tok-x')
+  setCurrentSession(null)
+end
+end
+
+test setCurrentSession
+it 'updates the per-request module state'
+  setCurrentSession(null)
+  assert.isNull(currentRequestSession())
+  setCurrentSession(Session(token: 'tok-y', userId: 10, userName: 'Lee'))
+  assert.equals(currentRequestSession()!.userName, 'Lee')
+  setCurrentSession(null)
+end
+end

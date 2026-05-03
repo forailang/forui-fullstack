@@ -1,0 +1,61 @@
+use { ViewNode, VStack, Label, Button, TextInput, fontSize, foreground, padding } from Forui.view
+
+use { Link, navigate } from Forui.router
+
+use { clearHookSignals, useSignal, setValue } from Forui.signal
+
+use { signup, setSession, isLoggedIn } from auth
+
+use { TopBar, Section } from components
+
+# Signup page — name + email + password form.
+def SignupPage
+    @return ViewNode
+do
+  var name = useSignal('')
+  var email = useSignal('')
+  var password = useSignal('')
+  var err = useSignal('')
+  VStack do
+      TopBar()
+      let content = Section('CREATE ACCOUNT') do
+          TextInput('Your name', signalValue: name)
+          TextInput('Email', signalValue: email, inputType: 'email')
+          TextInput('Password', signalValue: password, inputType: 'password')
+          if err.value != ''
+            Label(err.value).foreground('#ff3b30').fontSize(13)
+          end
+          Button('Create account', onClick: do
+              if name.value == '' or email.value == '' or password.value == ''
+                err.setValue('Please fill in all fields')
+              else
+                try
+                  let s = signup(name.value, email.value, password.value)
+                  setSession(s)
+                  if isLoggedIn()
+                    navigate('/tasks')
+                  else
+                    err.setValue('Email already registered')
+                  end
+                catch e
+                  err.setValue(e.message)
+                end
+              end
+          end)
+          Link('/session/login') do
+              Label('Already have an account? Log in →').foreground('#007aff').fontSize(13)
+          end
+      end
+      content.padding(20)
+  end
+end
+
+test SignupPage
+it 'renders the signup form'
+  clearHookSignals()
+  let node = SignupPage()
+  assert.equals(node.kind, 'VStack')
+  assert.equals(node.children[0].kind, 'HStack')
+  assert.equals(node.children[1].kind, 'VStack')
+end
+end

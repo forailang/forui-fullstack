@@ -1,0 +1,44 @@
+use std.array
+
+use std.convert
+
+use std.math
+
+use { exec_params, query_params } from Forsqlite
+
+use { requireSession, signup } from auth
+
+use { getDb } from data
+
+# ToggleTask.
+remote def toggleTask
+    @param id Int
+    @return Task
+do
+  let uid = requireSession().userId
+  let db = getDb()
+  let rows = query_params(db, 'SELECT id, text, done FROM tasks WHERE id = ? AND user_id = ?', [id uid])
+  if length(rows) == 0
+    throw Error('task not found')
+  end
+  let r = rows[0]
+  let new_done = getInt(r, 'done')! == 0
+  var update_params Unknown[] = []
+  update_params = array.append(update_params, new_done)
+  update_params = array.append(update_params, id)
+  update_params = array.append(update_params, uid)
+  exec_params(db, 'UPDATE tasks SET done = ? WHERE id = ? AND user_id = ?', update_params)
+  Task(id: getInt(r, 'id')!, text: getString(r, 'text')!, done: new_done)
+end
+
+test toggleTask
+it 'toggles a task for the current session'
+  let n Int = math.floor(math.random() * 1000000.0)
+  signup('Task Toggle User', 'tasks-toggle-' + toString(n) + '@example.com', 'pw')
+  let task = addTask('toggle me')
+  let updated = toggleTask(task.id)
+  assert.equals(updated.done, true)
+  let again = toggleTask(task.id)
+  assert.equals(again.done, false)
+end
+end

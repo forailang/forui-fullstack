@@ -1,0 +1,31 @@
+use { ViewNode, HStack, Label, fontWeight, foreground, padding, background, cornerRadius } from Forui.view
+
+use { Link } from Forui.router
+
+# Navigation bar with links.
+def Nav
+    @return ViewNode
+do
+  let bar = HStack do
+      Link('/') do
+          Label('Home').fontWeight('600').foreground('#007aff')
+      end
+      Link('/tasks') do
+          Label('Tasks').fontWeight('600').foreground('#007aff')
+      end
+      Link('/about') do
+          Label('About').fontWeight('600').foreground('#007aff')
+      end
+  end
+  bar.padding(12).background('#f2f2f7').cornerRadius(8)
+end
+
+test Nav
+it 'renders three navigation links'
+  let node = Nav()
+  assert.equals(node.kind, 'HStack')
+  assert.equals(node.children[0].kind, 'Link')
+  assert.equals(node.children[1].kind, 'Link')
+  assert.equals(node.children[2].kind, 'Link')
+end
+end
