@@ -97,6 +97,7 @@ The `tasks` sample shows the pattern.
 - **Add a resource**: add a migration under `db/migrations/`, create
   `src/data/<resource>/main.fai` with `remote type` + `remote def`s,
   and add a page that imports them by their real module path.
+
 ## Conventions
 
 - forui has no wildcard re-exports — import the symbols you use by
@@ -110,6 +111,51 @@ The `tasks` sample shows the pattern.
 - Signals must be declared at the top of a component function, not
   inside a conditional or loop — the framework tracks them by call
   order.
+
+## Testing
+
+A `fai test` run executes every `test` block in one wasm pass against
+a **single in-memory SQLite database**. Three consequences:
+
+1. **State is shared across `test` blocks.** Rows another test
+   inserted are visible to yours. Don't assume an empty db.
+2. **Randomize unique fields.** Email, slug, title — anything with a
+   `UNIQUE` constraint should mix in a random suffix so reruns and
+   sibling tests don't collide:
+
+   ```fai
+   let n Int = math.floor(math.random() * 1000000.0)
+   let email = 'login-' + toString(n) + '@example.com'
+   ```
+
+   See `src/auth/server.fai` and `src/data/users/findUserByEmail.fai`
+   for the canonical pattern.
+3. **`.env.testing` is not auto-loaded.** Tests run with no env
+   loaded, so `getDb()` falls back to `sqlite::memory:`. Override
+   manually with `env.load('.env.testing')` only if you need a
+   file-backed test db.
+
+### Component tests with remote-def signals
+
+A component that does `var x = useSignal(initial) do remoteFn() end`
+will trap inside `testMount` because the test runtime can't dispatch
+RPC. For these, write a minimal `'is covered by routed app rendering'`
+test (see `src/pages/task_detail.fai` for the pattern) and rely on
+the `App` test in `routes.fai` to exercise the rendered tree.
+
+### Testing pages that read route params
+
+`routeParam('id')` only returns a value while a `Router` is actively
+matching a `Route`. To test such a page, drive it through `App()`
+after seeding the path:
+
+```fai
+setPathFromPlatform('/posts/my-slug')
+let node = App()
+```
+
+Calling `PostDetailPage()` directly will get a null param and
+usually trap on the unwrap.
 
 ## Dependencies
 
