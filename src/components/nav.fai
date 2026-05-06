@@ -8,16 +8,24 @@ def Nav
 do
   let bar = HStack do
       Link('/') do
-          Label('Home').fontWeight('600').foreground('#007aff')
+          Label('Home')
+            .fontWeight('600')
+            .foreground('#007aff')
       end
       Link('/tasks') do
-          Label('Tasks').fontWeight('600').foreground('#007aff')
+          Label('Tasks')
+            .fontWeight('600')
+            .foreground('#007aff')
       end
       Link('/about') do
-          Label('About').fontWeight('600').foreground('#007aff')
+          Label('About')
+            .fontWeight('600')
+            .foreground('#007aff')
       end
   end
-  bar.padding(12).background('#f2f2f7').cornerRadius(8)
+  bar.padding(12)
+    .background('#f2f2f7')
+    .cornerRadius(8)
 end
 
 test Nav

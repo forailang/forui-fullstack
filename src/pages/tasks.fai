@@ -39,7 +39,9 @@ do
       let body = VStack do
           TaskAddForm(tasks, err)
           if err.value != ''
-            Label('error: ' + err.value).foreground('#ff3b30').fontSize(14)
+            Label('error: ' + err.value)
+              .foreground('#ff3b30')
+              .fontSize(14)
           end
           Divider()
           TaskListSection(tasks, err)
@@ -84,9 +86,13 @@ def TaskListSection
 do
   Section('TASKS') do
       if tasks.isLoading()
-        Label('Loading…').foreground('#6d6d72').fontSize(14)
+        Label('Loading…')
+          .foreground('#6d6d72')
+          .fontSize(14)
       else if length(tasks.value) == 0
-        Label('No tasks yet. Add one above!').foreground('#6d6d72').fontSize(14)
+        Label('No tasks yet. Add one above!')
+          .foreground('#6d6d72')
+          .fontSize(14)
       else
         for t in tasks.value
           TaskRow(t, tasks, err)
@@ -112,7 +118,8 @@ do
           tasks.reload()
       end)
       Link('/task/' + toString(t.id)) do
-          Label(t.text).fontSize(16)
+          Label(t.text)
+            .fontSize(16)
       end
   end
 end

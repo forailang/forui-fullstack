@@ -39,7 +39,9 @@ do
       Route('*') do
           VStack do
               TopBar()
-              Label('Page not found').fontSize(18).padding(32)
+              Label('Page not found')
+                .fontSize(18)
+                .padding(32)
           end
       end
   end

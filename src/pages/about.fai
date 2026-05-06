@@ -9,9 +9,14 @@ do
   VStack do
       TopBar()
       let body = VStack do
-          Label('About').fontSize(24).fontWeight('700')
-          Label('A fullstack app built with forai and forui.').fontSize(16)
-          Label('Uses same-module RPC calls.').foreground('#8e8e93').fontSize(13)
+          Label('About')
+            .fontSize(24)
+            .fontWeight('700')
+          Label('A fullstack app built with forai and forui.')
+            .fontSize(16)
+          Label('Uses same-module RPC calls.')
+            .foreground('#8e8e93')
+            .fontSize(13)
       end
       body.padding(20)
   end

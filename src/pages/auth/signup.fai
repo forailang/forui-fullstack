@@ -23,7 +23,9 @@ do
           TextInput('Email', signalValue: email, inputType: 'email')
           TextInput('Password', signalValue: password, inputType: 'password')
           if err.value != ''
-            Label(err.value).foreground('#ff3b30').fontSize(13)
+            Label(err.value)
+              .foreground('#ff3b30')
+              .fontSize(13)
           end
           Button('Create account', onClick: do
               if name.value == '' or email.value == '' or password.value == ''
@@ -43,7 +45,9 @@ do
               end
           end)
           Link('/session/login') do
-              Label('Already have an account? Log in →').foreground('#007aff').fontSize(13)
+              Label('Already have an account? Log in →')
+                .foreground('#007aff')
+                .fontSize(13)
           end
       end
       content.padding(20)

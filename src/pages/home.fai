@@ -13,8 +13,13 @@ do
   VStack do
       TopBar()
       let hero = VStack do
-          Label('Welcome to MyApp.').fontSize(40).fontWeight('700').foreground('#1c1c1e')
-          Label('A fullstack starter built with forai and forui.').fontSize(16).foreground('#6d6d72')
+          Label('Welcome to MyApp.')
+            .fontSize(40)
+            .fontWeight('700')
+            .foreground('#1c1c1e')
+          Label('A fullstack starter built with forai and forui.')
+            .fontSize(16)
+            .foreground('#6d6d72')
           if isLoggedIn()
             Button('Go to my tasks', onClick: do
                 navigate('/tasks')

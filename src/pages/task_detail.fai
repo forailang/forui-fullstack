@@ -37,19 +37,26 @@ do
       TopBar()
       let body = VStack do
           if task.isLoading()
-            Label('Loading…').foreground('#6d6d72')
+            Label('Loading…')
+              .foreground('#6d6d72')
           else if task.isLoaded()
             Section('TASK DETAIL') do
-                Label(task.value.text).fontSize(18).fontWeight('600')
+                Label(task.value.text)
+                  .fontSize(18)
+                  .fontWeight('600')
                 HStack do
                     Toggle(isOn: task.value.done, onChange: do
                         toggleTask(taskId)
                         task.reload()
                     end)
                     if task.value.done
-                      Label('Done').foreground('#34c759').fontSize(14)
+                      Label('Done')
+                        .foreground('#34c759')
+                        .fontSize(14)
                     else
-                      Label('In progress').foreground('#6d6d72').fontSize(14)
+                      Label('In progress')
+                        .foreground('#6d6d72')
+                        .fontSize(14)
                     end
                 end
                 Button('← Back to tasks', onClick: do
@@ -57,7 +64,8 @@ do
                 end)
             end
           else
-            Label('Task not found').foreground('#ff3b30')
+            Label('Task not found')
+              .foreground('#ff3b30')
           end
       end
       body.padding(20)

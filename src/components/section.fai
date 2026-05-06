@@ -7,10 +7,15 @@ def Section
     @return ViewNode
 do
   let card = VStack do
-      Label(title).fontSize(13).foreground('#6d6d72').fontWeight('600')
+      Label(title)
+        .fontSize(13)
+        .foreground('#6d6d72')
+        .fontWeight('600')
       builder()
   end
-  card.padding(16).background('#ffffff').cornerRadius(12)
+  card.padding(16)
+    .background('#ffffff')
+    .cornerRadius(12)
 end
 
 test Section

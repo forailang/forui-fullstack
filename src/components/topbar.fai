@@ -11,28 +11,43 @@ def TopBar
 do
   let bar = HStack do
       Link('/') do
-          Label('MyApp').fontSize(20).fontWeight('700').foreground('#1c1c1e')
+          Label('MyApp')
+            .fontSize(20)
+            .fontWeight('700')
+            .foreground('#1c1c1e')
       end
       Spacer()
       if isLoggedIn()
         HStack do
-            Label('Hi, ' + sessionUserName()).foreground('#6d6d72').fontSize(14)
+            Label('Hi, ' + sessionUserName())
+              .foreground('#6d6d72')
+              .fontSize(14)
             Link('/session/logout') do
-                Label('Log out').foreground('#ff3b30').fontWeight('600').fontSize(14)
+                Label('Log out')
+                  .foreground('#ff3b30')
+                  .fontWeight('600')
+                  .fontSize(14)
             end
         end
       else
         HStack do
             Link('/session/login') do
-                Label('Log in').foreground('#007aff').fontWeight('600').fontSize(14)
+                Label('Log in')
+                  .foreground('#007aff')
+                  .fontWeight('600')
+                  .fontSize(14)
             end
             Link('/session/signup') do
-                Label('Sign up').foreground('#007aff').fontWeight('600').fontSize(14)
+                Label('Sign up')
+                  .foreground('#007aff')
+                  .fontWeight('600')
+                  .fontSize(14)
             end
         end
       end
   end
-  bar.padding(16).background('#ffffff')
+  bar.padding(16)
+    .background('#ffffff')
 end
 
 test TopBar
