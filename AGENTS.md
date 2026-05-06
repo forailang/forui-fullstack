@@ -346,16 +346,22 @@ usually trap on the unwrap.
 
 ## Dependencies
 
-`fai.toml` points at sibling source trees:
+`fai.toml` uses the `Name = "url"` form. The LHS must match the dep's
+own `[project] name`; the RHS is a `file://` path or a `https://`
+git URL.
 
 ```toml
-"file://../forui" = "0.1.0"
-"file://../html-forui" = "0.1.0"
-"file://../forsqlite" = "0.1.0"
-```
+[dependencies]
+# Sibling source trees (preferred for local iteration):
+Forui     = "file://../forui"
+HtmlForui = "file://../html-forui"
+Forsqlite = "file://../forsqlite"
 
-Adjust if you move the project, or pin to git URLs once that is
-supported.
+# Or fetch from public git repos (cached at ~/.fai/cache/git/...):
+# Forui     = "https://github.com/forailang/forui"
+# HtmlForui = "https://github.com/forailang/html-forui"
+# Forsqlite = "https://github.com/forailang/forsqlite"
+```
 
 ## Reference
 

@@ -17,9 +17,9 @@ build_dir = "build/server"
 rpc_server = true
 
 [dependencies]
-"file://../forui" = "0.1.0"
-"file://../html-forui" = "0.1.0"
-"file://../forsqlite" = "0.1.0"
+Forui = "https://github.com/forailang/forui"
+HtmlForui = "https://github.com/forailang/html-forui"
+Forsqlite = "https://github.com/forailang/forsqlite"
 
 [project.web.dependencies.server.remote.dev]
 url = "http://localhost:3040"
